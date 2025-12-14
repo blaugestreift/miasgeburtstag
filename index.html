@@ -72,6 +72,7 @@
     @media (prefers-reduced-motion: reduce){
       .fx::before{ animation:none; }
       canvas#stars{ display:none; }
+      .sparkle{ animation:none !important; }
     }
 
     canvas#stars{
@@ -157,12 +158,14 @@
       font-size: clamp(14px, 3.7vw, 16px);
     }
 
+    /* Countdown grid */
     .grid{
       display:grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: clamp(10px, 2.6vw, 14px);
       cursor:pointer;
       user-select:none;
+      position:relative; /* for sparkles overlay */
     }
 
     @media (max-width: 720px){
@@ -270,7 +273,7 @@
       pointer-events:none;
       transition: opacity .25s ease, transform .25s ease;
       font-size: 14px;
-      z-index: 5;
+      z-index: 6;
       max-width: min(92vw, 520px);
       text-align:center;
     }
@@ -279,31 +282,30 @@
       transform: translateX(-50%) translateY(-6px);
     }
 
-    /* Confetti */
-    .confetti{
-      position:fixed; inset:0;
-      pointer-events:none;
-      overflow:hidden;
-      z-index:4;
-      display:none;
-    }
-    .confetti.on{ display:block; }
-    .piece{
+    /* Sparkle overlay */
+    #sparkles{
       position:absolute;
-      width:10px; height:16px;
-      background: var(--pink);
-      opacity:.9;
-      border-radius: 3px;
-      transform: translateY(-20px) rotate(0deg);
-      animation: fall 1.7s linear forwards;
-      filter: drop-shadow(0 8px 12px rgba(0,0,0,.25));
-      will-change: transform;
+      inset:0;
+      pointer-events:none;
+      z-index: 4;
+      overflow:hidden;
     }
-    @keyframes fall{
-      to{
-        transform: translateY(calc(100svh + 40px)) rotate(540deg);
-        opacity: 1;
-      }
+
+    .sparkle{
+      position:absolute;
+      width:10px; height:10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.92);
+      box-shadow: 0 0 18px rgba(255,46,166,.7);
+      transform: translate(-50%, -50%);
+      animation: sparkle 520ms ease-out forwards;
+      will-change: transform, opacity;
+    }
+
+    @keyframes sparkle{
+      0%   { transform: translate(-50%, -50%) translate(0,0) scale(0.6); opacity: 0; }
+      20%  { opacity: 1; }
+      100% { transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) scale(0.1); opacity: 0; }
     }
   </style>
 </head>
@@ -326,6 +328,8 @@
         </div>
 
         <section class="grid" id="countdownGrid" aria-label="Timer" title="Klick mich ✨">
+          <div id="sparkles" aria-hidden="true"></div>
+
           <div class="tile">
             <div class="num" id="days">–</div>
             <div class="label" id="daysLabel">Tage</div>
@@ -357,7 +361,6 @@
     </main>
   </div>
 
-  <div class="confetti" id="confetti"></div>
   <div class="toast" id="toast">✨</div>
 
   <script>
@@ -401,81 +404,92 @@
       toastEl.textContent = msg;
       toastEl.classList.add("show");
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1400);
+      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1200);
     }
 
-    // --- Confetti (Mobile-optimiert) ---
-    const confetti = el("confetti");
-    let confettiCooldown = false;
-    let partyInterval = null;
+    // Sparkle Burst
+    const grid = el("countdownGrid");
+    const sparkWrap = el("sparkles");
 
-    function burstConfetti(requestedCount = 80){
-      if (confettiCooldown) return;
+    let sparkleCooldown = false;
 
-      confettiCooldown = true;
-      setTimeout(() => (confettiCooldown = false), isTouch ? 450 : 250);
+    function sparkleBurst(x, y){
+      if (sparkleCooldown) return;
+      sparkleCooldown = true;
+      setTimeout(() => (sparkleCooldown = false), isTouch ? 250 : 160);
 
-      const count = Math.min(isTouch ? 70 : 120, requestedCount);
+      // wenige Partikel => mobile-smooth
+      const n = isTouch ? 10 : 16;
 
       // DOM sauber halten
-      confetti.innerHTML = "";
-      confetti.classList.add("on");
+      sparkWrap.innerHTML = "";
 
-      const w = window.innerWidth;
-      const frag = document.createDocumentFragment();
+      for (let i=0; i<n; i++){
+        const s = document.createElement("div");
+        s.className = "sparkle";
+        s.style.left = x + "px";
+        s.style.top  = y + "px";
 
-      for (let i=0; i<count; i++){
-        const p = document.createElement("div");
-        p.className = "piece";
-        p.style.left = (Math.random()*w) + "px";
-        p.style.top = (-20 - Math.random()*140) + "px";
-        p.style.animationDuration = (isTouch ? (1.0 + Math.random()*0.9) : (1.1 + Math.random()*1.2)) + "s";
-        p.style.opacity = (0.65 + Math.random()*0.35).toFixed(2);
+        const dx = (Math.random() * 180 - 90);
+        const dy = (Math.random() * 180 - 90);
 
-        const isWhite = Math.random() < 0.18;
-        p.style.background = isWhite
-          ? "rgba(255,255,255,.92)"
-          : (Math.random() < 0.5 ? "var(--pink)" : "var(--pink2)");
+        s.style.setProperty("--dx", dx + "px");
+        s.style.setProperty("--dy", dy + "px");
+        s.style.animationDuration = (isTouch ? (420 + Math.random()*220) : (380 + Math.random()*240)) + "ms";
 
-        p.addEventListener("animationend", () => p.remove(), { once:true });
-        frag.appendChild(p);
+        // leichte Variation: pink/weiß
+        const pinky = Math.random() < 0.45;
+        s.style.background = pinky ? "rgba(255, 46, 166, .95)" : "rgba(255,255,255,.92)";
+        s.style.boxShadow = pinky ? "0 0 18px rgba(255,46,166,.8)" : "0 0 18px rgba(255,255,255,.35)";
+
+        sparkWrap.appendChild(s);
+        s.addEventListener("animationend", () => s.remove(), { once:true });
       }
-
-      confetti.appendChild(frag);
-
-      setTimeout(() => {
-        if (confetti.childElementCount === 0) confetti.classList.remove("on");
-      }, isTouch ? 1400 : 2200);
     }
+
+    function clickSparkles(e){
+      const rect = grid.getBoundingClientRect();
+      const x = (e.clientX ?? (rect.left + rect.width/2)) - rect.left;
+      const y = (e.clientY ?? (rect.top + rect.height/2)) - rect.top;
+
+      sparkleBurst(x, y);
+
+      if (navigator.vibrate) navigator.vibrate(18);
+      toast("✨ Sparkle!");
+    }
+
+    // Tap/click on countdown
+    grid.addEventListener("click", clickSparkles, { passive: true });
+
+    // Party mode: periodic sparkle from random positions
+    let party = false;
+    let partyInterval = null;
+
+    el("partyBtn").addEventListener("click", () => {
+      party = !party;
+      toast(party ? "Party-Mode an 💖" : "Party-Mode aus");
+
+      if (party){
+        // initial burst center
+        sparkleBurst(grid.clientWidth/2, grid.clientHeight/2);
+
+        partyInterval = setInterval(() => {
+          const x = Math.random() * grid.clientWidth;
+          const y = Math.random() * grid.clientHeight;
+          sparkleBurst(x, y);
+        }, isTouch ? 700 : 520);
+      } else {
+        clearInterval(partyInterval);
+        partyInterval = null;
+        sparkWrap.innerHTML = "";
+      }
+    });
 
     function tick(){
       const now = new Date();
       const diff = target - now;
       setTimeParts(diff);
     }
-
-    // Klick-Extra auf Countdown (Mobile weniger)
-    el("countdownGrid").addEventListener("click", () => {
-      burstConfetti(isTouch ? 70 : 160);
-      toast("✨ Surprise ✨");
-    });
-
-    // Party-Mode: Interval statt “pro Frame”
-    let party = false;
-    el("partyBtn").addEventListener("click", () => {
-      party = !party;
-      toast(party ? "Party-Mode an 💖" : "Party-Mode aus");
-
-      if (party){
-        burstConfetti(isTouch ? 80 : 140);
-        partyInterval = setInterval(() => {
-          burstConfetti(isTouch ? 26 : 40);
-        }, isTouch ? 900 : 700);
-      } else {
-        clearInterval(partyInterval);
-        partyInterval = null;
-      }
-    });
 
     // Stars/particles canvas (Mobile weniger Sterne)
     const canvas = el("stars");
