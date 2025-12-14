@@ -6,7 +6,6 @@
   <meta name="color-scheme" content="dark" />
   <title>Countdown</title>
 
-  <!-- Ähnlicher Look (condensed + modern). Wenn du "die echte" Font-Datei hast, unten ersetzen. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
@@ -17,10 +16,8 @@
       --bg2:#0e0a14;
       --pink:#ff2ea6;
       --pink2:#ff66c4;
-      --ink:#0a0710;
       --white:#fff;
       --glass: rgba(255, 255, 255, 0.08);
-      --glass2: rgba(255, 255, 255, 0.12);
       --stroke: rgba(255, 255, 255, 0.18);
       --shadow: 0 24px 80px rgba(0,0,0,.55);
       --radius: 28px;
@@ -40,7 +37,7 @@
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
 
-    /* animated noise/scanlines */
+    /* animated scanlines */
     .fx::before{
       content:"";
       position:fixed; inset:0;
@@ -135,29 +132,11 @@
     }
 
     .sub{
-      margin:6px 0 0;
-      opacity:.82;
+      margin:10px 0 0;
+      opacity:.86;
       max-width: 60ch;
+      font-size: clamp(14px, 2vw, 16px);
     }
-
-    .badgeRow{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-      margin-top:6px;
-    }
-
-    .badge{
-      border: 1px solid rgba(255,255,255,.16);
-      background: rgba(0,0,0,.25);
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-size: 13px;
-      opacity:.9;
-    }
-    .badge strong{ color: var(--pink2); font-weight:600; }
 
     .grid{
       display:grid;
@@ -291,17 +270,6 @@
         opacity: 1;
       }
     }
-
-    /* Optional: Wenn du eine echte Font-Datei hast:
-    @font-face{
-      font-family:"TokioHotelExact";
-      src:url("./tokio-hotel.woff2") format("woff2");
-      font-weight: 400 800;
-      font-style: normal;
-      font-display: swap;
-    }
-    Dann in .title -> font-family: TokioHotelExact, Oswald, ...
-    */
   </style>
 </head>
 
@@ -314,20 +282,16 @@
         <div class="top">
           <div>
             <h1 class="title">
-              <span class="hot">pink</span> blackout
+              <span class="hot">Der Countdown</span> läuft …
             </h1>
-            <p class="sub" id="modeText">
-              Countdown bis <strong>13.11.2025 – 20:00 (Berlin)</strong>
+            <p class="sub">
+              Countdown bis <strong>13.11.2026</strong> um <strong>20:00 Uhr</strong>.
             </p>
-          </div>
-
-          <div class="badgeRow">
-            <div class="badge">Ziel: <strong id="targetText">13.11.2025 20:00</strong></div>
-            <div class="badge">Status: <strong id="statusText">lädt…</strong></div>
           </div>
         </div>
 
-        <section class="grid" aria-label="Timer">
+        <!-- Klick-Extra jetzt hier drauf -->
+        <section class="grid" id="countdownGrid" aria-label="Timer" title="Klick mich ✨">
           <div class="tile" id="tDays">
             <div class="num" id="days">–</div>
             <div class="label" id="daysLabel">Tage</div>
@@ -348,11 +312,10 @@
 
         <div class="footer">
           <div class="hint" id="hint">
-            Tipp: Klick auf <strong>Pink Blackout</strong> für ein kleines Extra ✨
+            Tipp: Klick auf den Countdown für ein kleines Extra ✨
           </div>
 
           <div class="btns">
-            <button id="copyLinkBtn" type="button">Zeitpunkt kopieren</button>
             <button id="partyBtn" type="button">Party-Mode</button>
           </div>
         </div>
@@ -361,40 +324,24 @@
   </div>
 
   <div class="confetti" id="confetti"></div>
-  <div class="toast" id="toast">Kopiert ✅</div>
+  <div class="toast" id="toast">✨</div>
 
   <script>
-    // Ziel: 13. November 2026, 20:00 Uhr in Berlin (November = CET, +01:00)
+    // Ziel: 13. November 2026, 20:00 Uhr in Berlin
+    // (In November gilt in Berlin i.d.R. CET = +01:00)
     const target = new Date("2026-11-13T20:00:00+01:00");
 
     const el = (id) => document.getElementById(id);
-
-    const statusText = el("statusText");
-    const modeText = el("modeText");
 
     const out = {
       days: el("days"),
       hours: el("hours"),
       minutes: el("minutes"),
       seconds: el("seconds"),
-      daysLabel: el("daysLabel"),
-      targetText: el("targetText")
+      daysLabel: el("daysLabel")
     };
 
-    // Format für Anzeige
     function pad2(n){ return String(n).padStart(2, "0"); }
-
-    function formatDE(d){
-      // einfache, stabile Anzeige ohne locale-Zeitzonen-Fallen
-      const dd = pad2(d.getDate());
-      const mm = pad2(d.getMonth()+1);
-      const yyyy = d.getFullYear();
-      const hh = pad2(d.getHours());
-      const mi = pad2(d.getMinutes());
-      return `${dd}.${mm}.${yyyy} ${hh}:${mi}`;
-    }
-
-    out.targetText.textContent = formatDE(target);
 
     function setTimeParts(ms){
       const total = Math.max(0, Math.floor(ms / 1000));
@@ -411,30 +358,6 @@
       out.daysLabel.textContent = (days === 1) ? "Tag" : "Tage";
     }
 
-    let didCelebrate = false;
-
-    function tick(){
-      const now = new Date();
-      const diff = target - now;
-
-      if (diff > 0){
-        statusText.textContent = "Countdown";
-        modeText.innerHTML = `Countdown bis <strong>${formatDE(target)} (Berlin)</strong>`;
-        setTimeParts(diff);
-      } else {
-        statusText.textContent = "Vergangen";
-        modeText.innerHTML = `Seit <strong>${formatDE(target)} (Berlin)</strong> vergangen:`;
-        setTimeParts(Math.abs(diff));
-
-        // einmaliges Mini-Feuerwerk beim ersten Umschalten
-        if (!didCelebrate){
-          didCelebrate = true;
-          burstConfetti(120);
-          toast("Zeitpunkt erreicht ✨");
-        }
-      }
-    }
-
     // Confetti
     const confetti = el("confetti");
     function burstConfetti(count=80){
@@ -445,18 +368,13 @@
         p.className = "piece";
         p.style.left = Math.random()*w + "px";
         p.style.top = (-20 - Math.random()*120) + "px";
-        p.style.transform = `translateY(-20px) rotate(${Math.random()*180}deg)`;
         p.style.animationDuration = (1.2 + Math.random()*1.4) + "s";
         p.style.opacity = (0.65 + Math.random()*0.35).toFixed(2);
-
-        // leicht variieren (pink/weiß)
         const isWhite = Math.random() < 0.18;
         p.style.background = isWhite ? "rgba(255,255,255,.92)" : (Math.random() < 0.5 ? "var(--pink)" : "var(--pink2)");
-
         confetti.appendChild(p);
         p.addEventListener("animationend", () => p.remove());
       }
-      // Auto-off
       setTimeout(() => {
         if (confetti.childElementCount === 0) confetti.classList.remove("on");
       }, 2200);
@@ -472,15 +390,18 @@
       toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1400);
     }
 
-    // Buttons
-    el("copyLinkBtn").addEventListener("click", async () => {
-      const text = `${formatDE(target)} (Europe/Berlin)`;
-      try{
-        await navigator.clipboard.writeText(text);
-        toast("Kopiert ✅");
-      } catch {
-        toast("Kopieren nicht möglich");
-      }
+    function tick(){
+      const now = new Date();
+      const diff = target - now;
+
+      // Wir zeigen hier bewusst nur Countdown (keinen Count-up), weil Ziel in der Zukunft liegt.
+      setTimeParts(diff);
+    }
+
+    // Klick-Extra jetzt auf Countdown
+    el("countdownGrid").addEventListener("click", () => {
+      burstConfetti(160);
+      toast("✨ Surprise ✨");
     });
 
     let party = false;
@@ -489,9 +410,6 @@
       toast(party ? "Party-Mode an 💖" : "Party-Mode aus");
       if (party) burstConfetti(140);
     });
-
-    // Easter egg: Title klick = confetti
-    document.querySelector(".title").addEventListener("click", () => burstConfetti(160));
 
     // Stars/particles canvas
     const canvas = el("stars");
@@ -512,7 +430,6 @@
 
     function draw(){
       ctx.clearRect(0,0,W,H);
-      // subtle glow
       ctx.globalCompositeOperation = "lighter";
       for (const st of stars){
         st.y += st.s;
@@ -524,7 +441,6 @@
         ctx.fillStyle = "rgba(255, 46, 166, 0.65)";
         ctx.fill();
 
-        // tiny white sparkle
         if (Math.random() < 0.012){
           ctx.globalAlpha = 0.85;
           ctx.beginPath();
