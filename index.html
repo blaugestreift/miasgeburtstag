@@ -1,11 +1,552 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Geschenk Timer</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Countdown</title>
+
+  <!-- Ähnlicher Look (condensed + modern). Wenn du "die echte" Font-Datei hast, unten ersetzen. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #07060a;
+      --bg2:#0e0a14;
+      --pink:#ff2ea6;
+      --pink2:#ff66c4;
+      --ink:#0a0710;
+      --white:#fff;
+      --glass: rgba(255, 255, 255, 0.08);
+      --glass2: rgba(255, 255, 255, 0.12);
+      --stroke: rgba(255, 255, 255, 0.18);
+      --shadow: 0 24px 80px rgba(0,0,0,.55);
+      --radius: 28px;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      color:rgba(255,255,255,.92);
+      background:
+        radial-gradient(1200px 800px at 15% 20%, rgba(255,46,166,.25), transparent 55%),
+        radial-gradient(900px 600px at 85% 25%, rgba(255,102,196,.18), transparent 60%),
+        radial-gradient(900px 700px at 60% 90%, rgba(255,46,166,.12), transparent 60%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+      overflow:hidden;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    /* animated noise/scanlines */
+    .fx::before{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255,255,255,.03) 0px,
+          rgba(255,255,255,.03) 1px,
+          transparent 2px,
+          transparent 6px
+        );
+      mix-blend-mode: overlay;
+      opacity:.18;
+      animation: scan 6s linear infinite;
+    }
+    @keyframes scan{
+      0%{ transform: translateY(-20px); }
+      100%{ transform: translateY(20px); }
+    }
+
+    canvas#stars{
+      position:fixed; inset:0;
+      width:100%; height:100%;
+      opacity:.55;
+      filter: blur(.2px);
+    }
+
+    .wrap{
+      position:relative;
+      min-height:100%;
+      display:grid;
+      place-items:center;
+      padding: clamp(18px, 4vw, 42px);
+    }
+
+    .card{
+      width:min(980px, 100%);
+      border-radius: var(--radius);
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, var(--glass), rgba(0,0,0,.12));
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+
+    .card::after{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(420px 240px at 20% 10%, rgba(255,46,166,.28), transparent 60%),
+        radial-gradient(520px 320px at 80% 20%, rgba(255,102,196,.22), transparent 60%),
+        radial-gradient(560px 380px at 50% 120%, rgba(255,46,166,.18), transparent 60%);
+      filter: blur(14px);
+      opacity:.9;
+      pointer-events:none;
+      z-index:0;
+    }
+
+    .inner{
+      position:relative;
+      z-index:1;
+      padding: clamp(18px, 4vw, 42px);
+      display:grid;
+      gap: 22px;
+    }
+
+    .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+    }
+
+    .title{
+      line-height:1;
+      margin:0;
+      font-family: Oswald, Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      font-weight: 700;
+      font-size: clamp(32px, 5.4vw, 64px);
+    }
+
+    .title .hot{
+      color: var(--pink);
+      text-shadow:
+        0 0 18px rgba(255,46,166,.35),
+        0 0 42px rgba(255,46,166,.18);
+    }
+
+    .sub{
+      margin:6px 0 0;
+      opacity:.82;
+      max-width: 60ch;
+    }
+
+    .badgeRow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      margin-top:6px;
+    }
+
+    .badge{
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.25);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      opacity:.9;
+    }
+    .badge strong{ color: var(--pink2); font-weight:600; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    @media (max-width: 720px){
+      .grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+
+    .tile{
+      border-radius: 22px;
+      padding: 16px 16px 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(10,7,16,.55);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      position:relative;
+      overflow:hidden;
+      transition: transform .25s ease, border-color .25s ease;
+      user-select:none;
+    }
+    .tile:hover{
+      transform: translateY(-2px);
+      border-color: rgba(255,46,166,.55);
+    }
+    .tile::before{
+      content:"";
+      position:absolute; inset:-1px;
+      background: radial-gradient(240px 120px at 30% 10%, rgba(255,46,166,.20), transparent 60%);
+      opacity:.8;
+      pointer-events:none;
+    }
+
+    .num{
+      font-family: Oswald, Impact, sans-serif;
+      font-weight:700;
+      font-size: clamp(34px, 4.2vw, 56px);
+      letter-spacing: .02em;
+      margin: 2px 0 4px;
+    }
+
+    .label{
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      opacity: .78;
+    }
+
+    .footer{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 14px;
+      flex-wrap:wrap;
+      margin-top: 4px;
+    }
+
+    .hint{
+      opacity:.84;
+      font-size: 14px;
+    }
+
+    .btns{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    button{
+      appearance:none;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.28);
+      color: rgba(255,255,255,.92);
+      padding: 10px 14px;
+      border-radius: 999px;
+      cursor:pointer;
+      transition: transform .2s ease, border-color .2s ease, background .2s ease;
+      font-weight:600;
+    }
+    button:hover{
+      transform: translateY(-1px);
+      border-color: rgba(255,46,166,.55);
+      background: rgba(255,46,166,.10);
+    }
+    button:active{ transform: translateY(0px); }
+
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(10px);
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .25s ease, transform .25s ease;
+      font-size: 14px;
+      z-index: 5;
+    }
+    .toast.show{
+      opacity:1;
+      transform: translateX(-50%) translateY(-6px);
+    }
+
+    /* Confetti */
+    .confetti{
+      position:fixed; inset:0;
+      pointer-events:none;
+      overflow:hidden;
+      z-index:4;
+      display:none;
+    }
+    .confetti.on{ display:block; }
+    .piece{
+      position:absolute;
+      width:10px; height:16px;
+      background: var(--pink);
+      opacity:.9;
+      border-radius: 3px;
+      transform: translateY(-20px) rotate(0deg);
+      animation: fall 1.9s linear forwards;
+      filter: drop-shadow(0 8px 12px rgba(0,0,0,.25));
+    }
+    @keyframes fall{
+      to{
+        transform: translateY(calc(100vh + 40px)) rotate(540deg);
+        opacity: 1;
+      }
+    }
+
+    /* Optional: Wenn du eine echte Font-Datei hast:
+    @font-face{
+      font-family:"TokioHotelExact";
+      src:url("./tokio-hotel.woff2") format("woff2");
+      font-weight: 400 800;
+      font-style: normal;
+      font-display: swap;
+    }
+    Dann in .title -> font-family: TokioHotelExact, Oswald, ...
+    */
+  </style>
 </head>
-<body>
-  <h1>🎁 Überraschung!</h1>
-  <p>Der Timer läuft…</p>
+
+<body class="fx">
+  <canvas id="stars"></canvas>
+
+  <div class="wrap">
+    <main class="card" role="main" aria-live="polite">
+      <div class="inner">
+        <div class="top">
+          <div>
+            <h1 class="title">
+              <span class="hot">pink</span> blackout
+            </h1>
+            <p class="sub" id="modeText">
+              Countdown bis <strong>13.11.2025 – 20:00 (Berlin)</strong>
+            </p>
+          </div>
+
+          <div class="badgeRow">
+            <div class="badge">Ziel: <strong id="targetText">13.11.2025 20:00</strong></div>
+            <div class="badge">Status: <strong id="statusText">lädt…</strong></div>
+          </div>
+        </div>
+
+        <section class="grid" aria-label="Timer">
+          <div class="tile" id="tDays">
+            <div class="num" id="days">–</div>
+            <div class="label" id="daysLabel">Tage</div>
+          </div>
+          <div class="tile">
+            <div class="num" id="hours">–</div>
+            <div class="label">Stunden</div>
+          </div>
+          <div class="tile">
+            <div class="num" id="minutes">–</div>
+            <div class="label">Minuten</div>
+          </div>
+          <div class="tile">
+            <div class="num" id="seconds">–</div>
+            <div class="label">Sekunden</div>
+          </div>
+        </section>
+
+        <div class="footer">
+          <div class="hint" id="hint">
+            Tipp: Klick auf <strong>Pink Blackout</strong> für ein kleines Extra ✨
+          </div>
+
+          <div class="btns">
+            <button id="copyLinkBtn" type="button">Zeitpunkt kopieren</button>
+            <button id="partyBtn" type="button">Party-Mode</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="confetti" id="confetti"></div>
+  <div class="toast" id="toast">Kopiert ✅</div>
+
+  <script>
+    // Ziel: 13. November 2026, 20:00 Uhr in Berlin (November = CET, +01:00)
+    const target = new Date("2026-11-13T20:00:00+01:00");
+
+    const el = (id) => document.getElementById(id);
+
+    const statusText = el("statusText");
+    const modeText = el("modeText");
+
+    const out = {
+      days: el("days"),
+      hours: el("hours"),
+      minutes: el("minutes"),
+      seconds: el("seconds"),
+      daysLabel: el("daysLabel"),
+      targetText: el("targetText")
+    };
+
+    // Format für Anzeige
+    function pad2(n){ return String(n).padStart(2, "0"); }
+
+    function formatDE(d){
+      // einfache, stabile Anzeige ohne locale-Zeitzonen-Fallen
+      const dd = pad2(d.getDate());
+      const mm = pad2(d.getMonth()+1);
+      const yyyy = d.getFullYear();
+      const hh = pad2(d.getHours());
+      const mi = pad2(d.getMinutes());
+      return `${dd}.${mm}.${yyyy} ${hh}:${mi}`;
+    }
+
+    out.targetText.textContent = formatDE(target);
+
+    function setTimeParts(ms){
+      const total = Math.max(0, Math.floor(ms / 1000));
+      const days = Math.floor(total / 86400);
+      const hours = Math.floor((total % 86400) / 3600);
+      const minutes = Math.floor((total % 3600) / 60);
+      const seconds = total % 60;
+
+      out.days.textContent = String(days);
+      out.hours.textContent = pad2(hours);
+      out.minutes.textContent = pad2(minutes);
+      out.seconds.textContent = pad2(seconds);
+
+      out.daysLabel.textContent = (days === 1) ? "Tag" : "Tage";
+    }
+
+    let didCelebrate = false;
+
+    function tick(){
+      const now = new Date();
+      const diff = target - now;
+
+      if (diff > 0){
+        statusText.textContent = "Countdown";
+        modeText.innerHTML = `Countdown bis <strong>${formatDE(target)} (Berlin)</strong>`;
+        setTimeParts(diff);
+      } else {
+        statusText.textContent = "Vergangen";
+        modeText.innerHTML = `Seit <strong>${formatDE(target)} (Berlin)</strong> vergangen:`;
+        setTimeParts(Math.abs(diff));
+
+        // einmaliges Mini-Feuerwerk beim ersten Umschalten
+        if (!didCelebrate){
+          didCelebrate = true;
+          burstConfetti(120);
+          toast("Zeitpunkt erreicht ✨");
+        }
+      }
+    }
+
+    // Confetti
+    const confetti = el("confetti");
+    function burstConfetti(count=80){
+      confetti.classList.add("on");
+      const w = window.innerWidth;
+      for (let i=0; i<count; i++){
+        const p = document.createElement("div");
+        p.className = "piece";
+        p.style.left = Math.random()*w + "px";
+        p.style.top = (-20 - Math.random()*120) + "px";
+        p.style.transform = `translateY(-20px) rotate(${Math.random()*180}deg)`;
+        p.style.animationDuration = (1.2 + Math.random()*1.4) + "s";
+        p.style.opacity = (0.65 + Math.random()*0.35).toFixed(2);
+
+        // leicht variieren (pink/weiß)
+        const isWhite = Math.random() < 0.18;
+        p.style.background = isWhite ? "rgba(255,255,255,.92)" : (Math.random() < 0.5 ? "var(--pink)" : "var(--pink2)");
+
+        confetti.appendChild(p);
+        p.addEventListener("animationend", () => p.remove());
+      }
+      // Auto-off
+      setTimeout(() => {
+        if (confetti.childElementCount === 0) confetti.classList.remove("on");
+      }, 2200);
+    }
+
+    // Toast
+    const toastEl = el("toast");
+    let toastTimer;
+    function toast(msg){
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1400);
+    }
+
+    // Buttons
+    el("copyLinkBtn").addEventListener("click", async () => {
+      const text = `${formatDE(target)} (Europe/Berlin)`;
+      try{
+        await navigator.clipboard.writeText(text);
+        toast("Kopiert ✅");
+      } catch {
+        toast("Kopieren nicht möglich");
+      }
+    });
+
+    let party = false;
+    el("partyBtn").addEventListener("click", () => {
+      party = !party;
+      toast(party ? "Party-Mode an 💖" : "Party-Mode aus");
+      if (party) burstConfetti(140);
+    });
+
+    // Easter egg: Title klick = confetti
+    document.querySelector(".title").addEventListener("click", () => burstConfetti(160));
+
+    // Stars/particles canvas
+    const canvas = el("stars");
+    const ctx = canvas.getContext("2d", { alpha: true });
+
+    let W, H, stars;
+    function resize(){
+      W = canvas.width = Math.floor(window.innerWidth * devicePixelRatio);
+      H = canvas.height = Math.floor(window.innerHeight * devicePixelRatio);
+      stars = Array.from({length: 140}, () => ({
+        x: Math.random()*W,
+        y: Math.random()*H,
+        r: (Math.random()*1.4 + 0.2) * devicePixelRatio,
+        s: (Math.random()*0.25 + 0.05) * devicePixelRatio,
+        a: Math.random()*0.6 + 0.2
+      }));
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      // subtle glow
+      ctx.globalCompositeOperation = "lighter";
+      for (const st of stars){
+        st.y += st.s;
+        if (st.y > H + 10) { st.y = -10; st.x = Math.random()*W; }
+
+        ctx.globalAlpha = st.a;
+        ctx.beginPath();
+        ctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
+        ctx.fillStyle = "rgba(255, 46, 166, 0.65)";
+        ctx.fill();
+
+        // tiny white sparkle
+        if (Math.random() < 0.012){
+          ctx.globalAlpha = 0.85;
+          ctx.beginPath();
+          ctx.arc(st.x, st.y, st.r*0.75, 0, Math.PI*2);
+          ctx.fillStyle = "rgba(255,255,255,0.9)";
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
+
+      if (party && Math.random() < 0.06) burstConfetti(18);
+      requestAnimationFrame(draw);
+    }
+
+    window.addEventListener("resize", resize);
+
+    // Start
+    resize();
+    draw();
+    tick();
+    setInterval(tick, 250);
+  </script>
 </body>
 </html>
