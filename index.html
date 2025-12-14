@@ -322,7 +322,7 @@
               Der <span class="hot">Countdown</span> läuft!
             </h1>
             <h2>
-              Leibe Mia,<br>
+              Liebe Mia,<br>
               wir haben dich unendlich dolle lieb<br>
               und wünschen Dir alles Gute zum Geburtstag!
             </h2>
@@ -457,92 +457,4 @@
     }
 
     // Tap/click on countdown
-    grid.addEventListener("click", clickSparkles, { passive: true });
-
-    // Party mode: periodic sparkle from random positions
-    let party = false;
-    let partyInterval = null;
-
-    el("partyBtn").addEventListener("click", () => {
-      party = !party;
-      toast(party ? "Party-Mode an 💖" : "Party-Mode aus");
-
-      if (party){
-        // initial burst center
-        sparkleBurst(grid.clientWidth/2, grid.clientHeight/2);
-
-        partyInterval = setInterval(() => {
-          const x = Math.random() * grid.clientWidth;
-          const y = Math.random() * grid.clientHeight;
-          sparkleBurst(x, y);
-        }, isTouch ? 700 : 520);
-      } else {
-        clearInterval(partyInterval);
-        partyInterval = null;
-        sparkWrap.innerHTML = "";
-      }
-    });
-
-    function tick(){
-      const now = new Date();
-      const diff = target - now;
-      setTimeParts(diff);
-    }
-
-    // Stars/particles canvas (Mobile weniger Sterne)
-    const canvas = el("stars");
-    const ctx = canvas.getContext("2d", { alpha:true });
-
-    let W, H, stars = [];
-    function resize(){
-      W = canvas.width = Math.floor(window.innerWidth * devicePixelRatio);
-      H = canvas.height = Math.floor(window.innerHeight * devicePixelRatio);
-
-      const starCount = isTouch ? 90 : 140;
-      stars = Array.from({length: starCount}, () => ({
-        x: Math.random()*W,
-        y: Math.random()*H,
-        r: (Math.random()*1.4 + 0.2) * devicePixelRatio,
-        s: (Math.random()*0.25 + 0.05) * devicePixelRatio,
-        a: Math.random()*0.6 + 0.2
-      }));
-    }
-
-    function draw(){
-      ctx.clearRect(0,0,W,H);
-      ctx.globalCompositeOperation = "lighter";
-
-      for (const st of stars){
-        st.y += st.s;
-        if (st.y > H + 10) { st.y = -10; st.x = Math.random()*W; }
-
-        ctx.globalAlpha = st.a;
-        ctx.beginPath();
-        ctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
-        ctx.fillStyle = "rgba(255, 46, 166, 0.65)";
-        ctx.fill();
-
-        if (!isTouch && Math.random() < 0.012){
-          ctx.globalAlpha = 0.85;
-          ctx.beginPath();
-          ctx.arc(st.x, st.y, st.r*0.75, 0, Math.PI*2);
-          ctx.fillStyle = "rgba(255,255,255,0.9)";
-          ctx.fill();
-        }
-      }
-
-      ctx.globalAlpha = 1;
-      ctx.globalCompositeOperation = "source-over";
-      requestAnimationFrame(draw);
-    }
-
-    window.addEventListener("resize", resize);
-
-    // Start
-    resize();
-    draw();
-    tick();
-    setInterval(tick, 250);
-  </script>
-</body>
-</html>
+    grid.addEventListener("click", clickSparkles, {
