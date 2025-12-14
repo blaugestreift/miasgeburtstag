@@ -126,14 +126,22 @@
       gap: clamp(14px, 3.2vw, 22px);
     }
 
+    /* Header block: spacing controlled here */
+    .head1{
+      padding: clamp(6px, 2vw, 12px);
+      display: grid;
+      gap: clamp(8px, 2.2vw, 12px);
+    }
+
     .title{
-      line-height:1.02;
+      line-height: 1.08;
       margin:0;
       font-family: Oswald, Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
       text-transform: uppercase;
       letter-spacing: .06em;
       font-weight: 700;
       font-size: clamp(30px, 7vw, 64px);
+      text-wrap: balance;
     }
     .title .hot{
       color: var(--pink);
@@ -142,20 +150,32 @@
         0 0 42px rgba(255,46,166,.18);
     }
 
-    /* hübsches h2 (bei dir war’s ungestylt) */
-    h2{
-      margin: 10px 0 0;
-      font-weight: 600;
-      font-size: clamp(16px, 4.2vw, 20px);
-      line-height: 1.25;
-      letter-spacing: .01em;
+    /* Message card */
+    .message{
+      margin-top: 2px;
+      padding: clamp(12px, 3.2vw, 16px);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.22);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 26px rgba(0,0,0,.25);
     }
 
-    .sub{
-      margin: clamp(10px, 2.2vw, 12px) 0 0;
-      opacity:.88;
-      max-width: 60ch;
-      font-size: clamp(14px, 3.7vw, 16px);
+    .message p{
+      margin: 0;
+      font-size: clamp(14px, 3.8vw, 16px);
+      line-height: 1.45;
+      opacity: .92;
+    }
+
+    .message strong{
+      color: rgba(255,255,255,.98);
+    }
+
+    .message .sig{
+      margin-top: 8px;
+      opacity: .75;
+      font-size: clamp(12px, 3.2vw, 13px);
     }
 
     /* Countdown grid */
@@ -167,7 +187,7 @@
       user-select:none;
       position:relative; /* sparkles overlay */
       -webkit-user-select:none;
-      touch-action: manipulation; /* besseres Tap-Verhalten */
+      touch-action: manipulation;
     }
 
     @media (max-width: 720px){
@@ -252,7 +272,7 @@
       border-color: rgba(255,46,166,.55);
     }
 
-    /* Toast (war bei dir im HTML nicht vorhanden) */
+    /* Toast */
     .toast{
       position: fixed;
       left: 50%;
@@ -299,10 +319,6 @@
       20%  { opacity: 1; }
       100% { transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) scale(0.1); opacity: 0; }
     }
-
-    .head1 {
-      padding = 0.5em;
-    }
   </style>
 </head>
 
@@ -312,13 +328,18 @@
   <div class="wrap">
     <main class="card" role="main" aria-live="polite">
       <div class="inner">
+
         <div class="head1">
           <h1 class="title">Der <span class="hot">Countdown</span> läuft!</h1>
-          <h2>
-            Liebe Mia,<br>
-            wir haben dich unendlich dolle lieb<br>
-            und wünschen Dir alles Gute zum Geburtstag!
-          </h2>
+
+          <div class="message">
+            <p>
+              <strong>Liebe Mia</strong>,<br>
+              wir haben dich unendlich dolle lieb<br>
+              und wünschen dir alles Gute zum Geburtstag! 💖
+            </p>
+            <div class="sig">— von uns</div>
+          </div>
         </div>
 
         <section class="grid" id="countdownGrid" aria-label="Timer" title="Klick mich ✨">
@@ -414,9 +435,7 @@
 
         const n = isTouch ? 10 : 16;
 
-        // NICHT jedes Mal alles killen, sondern sauber ersetzen:
         sparkWrap.textContent = "";
-
         const frag = document.createDocumentFragment();
 
         for (let i=0; i<n; i++){
@@ -449,14 +468,12 @@
         const y = (e.clientY ?? (rect.top + rect.height/2)) - rect.top;
 
         sparkleBurst(x, y);
-
         if (navigator.vibrate) navigator.vibrate(16);
       }
 
-      // ✅ Click handler (NICHT abschneiden 😄)
       grid.addEventListener("click", clickSparkles, { passive:true });
 
-      // Party mode: Interval – wiederhergestellt
+      // Party mode: Interval
       let party = false;
       let partyInterval = null;
 
@@ -465,10 +482,8 @@
         toast(party ? "Party-Mode an 💖" : "Party-Mode aus");
 
         if (party){
-          // Startburst in die Mitte
           sparkleBurst(grid.clientWidth/2, grid.clientHeight/2);
 
-          // Entspanntes Intervall (mobile langsamer)
           partyInterval = setInterval(() => {
             const x = Math.random() * grid.clientWidth;
             const y = Math.random() * grid.clientHeight;
