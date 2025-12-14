@@ -12,539 +12,242 @@
 
   <style>
     :root{
-      --bg: #07060a;
+      --bg:#07060a;
       --bg2:#0e0a14;
       --pink:#ff2ea6;
       --pink2:#ff66c4;
-      --glass: rgba(255, 255, 255, 0.08);
-      --stroke: rgba(255, 255, 255, 0.18);
-      --shadow: 0 24px 80px rgba(0,0,0,.55);
-      --radius: 28px;
-
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-right: env(safe-area-inset-right, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --safe-left: env(safe-area-inset-left, 0px);
+      --glass:rgba(255,255,255,.08);
+      --stroke:rgba(255,255,255,.18);
+      --shadow:0 24px 80px rgba(0,0,0,.55);
+      --radius:28px;
     }
 
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+
     body{
       margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
       color:rgba(255,255,255,.92);
       background:
         radial-gradient(1200px 800px at 15% 20%, rgba(255,46,166,.25), transparent 55%),
         radial-gradient(900px 600px at 85% 25%, rgba(255,102,196,.18), transparent 60%),
-        radial-gradient(900px 700px at 60% 90%, rgba(255,46,166,.12), transparent 60%),
-        linear-gradient(180deg, var(--bg), var(--bg2));
+        linear-gradient(180deg,var(--bg),var(--bg2));
       overflow:hidden;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-      text-rendering: optimizeLegibility;
+      -webkit-tap-highlight-color:transparent;
     }
 
-    /* scanlines (disabled on touch for smoothness) */
+    /* Scanlines – auf Touch deaktiviert */
     .fx::before{
       content:"";
-      position:fixed; inset:0;
+      position:fixed;
+      inset:0;
       pointer-events:none;
-      background:
-        repeating-linear-gradient(
-          to bottom,
-          rgba(255,255,255,.03) 0px,
-          rgba(255,255,255,.03) 1px,
-          transparent 2px,
-          transparent 6px
-        );
-      mix-blend-mode: overlay;
+      background:repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.03) 0,
+        rgba(255,255,255,.03) 1px,
+        transparent 2px,
+        transparent 6px
+      );
       opacity:.18;
-      animation: scan 6s linear infinite;
+      animation:scan 6s linear infinite;
     }
     @keyframes scan{
-      0%{ transform: translateY(-20px); }
-      100%{ transform: translateY(20px); }
+      from{transform:translateY(-20px)}
+      to{transform:translateY(20px)}
+    }
+    @media(pointer:coarse){
+      .fx::before{display:none}
     }
 
-    @media (pointer: coarse){
-      .fx::before{ display:none; }
-    }
-
-    @media (prefers-reduced-motion: reduce){
-      .fx::before{ animation:none; }
-      canvas#stars{ display:none; }
-      .sparkle{ animation:none !important; }
-    }
-
-    canvas#stars{
-      position:fixed; inset:0;
-      width:100%; height:100%;
+    canvas{
+      position:fixed;
+      inset:0;
       opacity:.55;
-      filter: blur(.2px);
-      transform: translateZ(0);
     }
 
     .wrap{
-      position:relative;
       min-height:100svh;
       display:grid;
       place-items:center;
-      padding:
-        calc(clamp(14px, 3.6vw, 40px) + var(--safe-top))
-        calc(clamp(14px, 3.6vw, 40px) + var(--safe-right))
-        calc(clamp(14px, 3.6vw, 40px) + var(--safe-bottom))
-        calc(clamp(14px, 3.6vw, 40px) + var(--safe-left));
+      padding:clamp(16px,4vw,42px);
     }
 
     .card{
-      width:min(980px, 100%);
-      border-radius: clamp(22px, 4.2vw, var(--radius));
-      border: 1px solid var(--stroke);
-      background: linear-gradient(180deg, var(--glass), rgba(0,0,0,.12));
-      backdrop-filter: blur(12px);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-      position:relative;
+      width:min(980px,100%);
+      border-radius:clamp(22px,4vw,var(--radius));
+      background:linear-gradient(180deg,var(--glass),rgba(0,0,0,.12));
+      border:1px solid var(--stroke);
+      backdrop-filter:blur(12px);
+      box-shadow:var(--shadow);
+      padding:clamp(18px,4vw,42px);
     }
 
-    .card::after{
-      content:"";
-      position:absolute; inset:-2px;
-      background:
-        radial-gradient(420px 240px at 20% 10%, rgba(255,46,166,.28), transparent 60%),
-        radial-gradient(520px 320px at 80% 20%, rgba(255,102,196,.22), transparent 60%),
-        radial-gradient(560px 380px at 50% 120%, rgba(255,46,166,.18), transparent 60%);
-      filter: blur(14px);
-      opacity:.9;
-      pointer-events:none;
-      z-index:0;
-    }
-
-    .inner{
-      position:relative;
-      z-index:1;
-      padding: clamp(16px, 4.2vw, 42px);
-      display:grid;
-      gap: clamp(14px, 3.2vw, 22px);
-    }
-
-    .top{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:14px;
-      flex-wrap:wrap;
-    }
-
-    .title{
-      line-height:1.02;
+    h1{
       margin:0;
-      font-family: Oswald, Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      font-weight: 700;
-      font-size: clamp(30px, 7vw, 64px);
+      font-family:Oswald,Impact,sans-serif;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      font-size:clamp(32px,7vw,64px);
     }
-    .title .hot{
-      color: var(--pink);
-      text-shadow:
-        0 0 18px rgba(255,46,166,.35),
-        0 0 42px rgba(255,46,166,.18);
+    h1 span{
+      color:var(--pink);
+      text-shadow:0 0 24px rgba(255,46,166,.5);
     }
 
     .sub{
-      margin: clamp(10px, 2.2vw, 12px) 0 0;
-      opacity:.88;
-      max-width: 60ch;
-      font-size: clamp(14px, 3.7vw, 16px);
+      margin-top:10px;
+      opacity:.85;
+      font-size:clamp(14px,3.5vw,16px);
     }
 
-    /* Countdown grid */
+    /* Countdown Grid */
     .grid{
+      margin-top:26px;
       display:grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: clamp(10px, 2.6vw, 14px);
+      grid-template-columns:repeat(4,1fr);
+      gap:14px;
       cursor:pointer;
       user-select:none;
-      position:relative; /* for sparkles overlay */
+      transition:transform .25s ease, filter .25s ease;
+    }
+    @media(max-width:720px){
+      .grid{grid-template-columns:repeat(2,1fr)}
     }
 
-    @media (max-width: 720px){
-      .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .card{ width: min(560px, 100%); }
+    /* 🔥 NEON PULSE */
+    .grid.pulse{
+      animation:pulse 520ms ease-out;
+    }
+    @keyframes pulse{
+      0%{
+        transform:scale(1);
+        filter:drop-shadow(0 0 0 rgba(255,46,166,0));
+      }
+      40%{
+        transform:scale(1.03);
+        filter:drop-shadow(0 0 28px rgba(255,46,166,.65));
+      }
+      100%{
+        transform:scale(1);
+        filter:drop-shadow(0 0 0 rgba(255,46,166,0));
+      }
     }
 
     .tile{
-      border-radius: clamp(18px, 4vw, 22px);
-      padding: clamp(14px, 3.6vw, 18px);
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(10,7,16,.55);
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-      position:relative;
-      overflow:hidden;
-      transition: transform .25s ease, border-color .25s ease;
-      min-height: clamp(92px, 18vw, 132px);
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-    }
-
-    .tile::before{
-      content:"";
-      position:absolute; inset:-1px;
-      background: radial-gradient(240px 120px at 30% 10%, rgba(255,46,166,.20), transparent 60%);
-      opacity:.8;
-      pointer-events:none;
-    }
-
-    @media (hover:hover) and (pointer:fine){
-      .tile:hover{
-        transform: translateY(-2px);
-        border-color: rgba(255,46,166,.55);
-      }
-    }
-    .tile:active{
-      transform: scale(0.99);
-      border-color: rgba(255,46,166,.55);
+      background:rgba(10,7,16,.55);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:22px;
+      padding:18px;
+      text-align:center;
     }
 
     .num{
-      font-family: Oswald, Impact, sans-serif;
+      font-family:Oswald,Impact,sans-serif;
+      font-size:clamp(40px,10vw,56px);
       font-weight:700;
-      letter-spacing: .02em;
-      margin: 2px 0 6px;
-      font-size: clamp(38px, 10vw, 56px);
     }
 
     .label{
-      font-size: clamp(11px, 3vw, 12px);
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      opacity: .78;
-    }
-
-    .footer{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 12px;
-      flex-wrap:wrap;
-      margin-top: 2px;
+      font-size:12px;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      opacity:.7;
     }
 
     .hint{
-      opacity:.84;
-      font-size: clamp(13px, 3.4vw, 14px);
-    }
-
-    .btns{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-
-    button{
-      appearance:none;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(0,0,0,.28);
-      color: rgba(255,255,255,.92);
-      padding: 12px 16px;
-      border-radius: 999px;
-      cursor:pointer;
-      transition: transform .2s ease, border-color .2s ease, background .2s ease;
-      font-weight:600;
-      font-size: 14px;
-    }
-    button:active{
-      transform: scale(0.99);
-      border-color: rgba(255,46,166,.55);
-    }
-
-    .toast{
-      position: fixed;
-      left: 50%;
-      bottom: calc(18px + var(--safe-bottom));
-      transform: translateX(-50%);
-      padding: 10px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(0,0,0,.45);
-      backdrop-filter: blur(10px);
-      opacity:0;
-      pointer-events:none;
-      transition: opacity .25s ease, transform .25s ease;
-      font-size: 14px;
-      z-index: 6;
-      max-width: min(92vw, 520px);
+      margin-top:18px;
+      opacity:.8;
+      font-size:14px;
       text-align:center;
-    }
-    .toast.show{
-      opacity:1;
-      transform: translateX(-50%) translateY(-6px);
-    }
-
-    /* Sparkle overlay */
-    #sparkles{
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-      z-index: 4;
-      overflow:hidden;
-    }
-
-    .sparkle{
-      position:absolute;
-      width:10px; height:10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.92);
-      box-shadow: 0 0 18px rgba(255,46,166,.7);
-      transform: translate(-50%, -50%);
-      animation: sparkle 520ms ease-out forwards;
-      will-change: transform, opacity;
-    }
-
-    @keyframes sparkle{
-      0%   { transform: translate(-50%, -50%) translate(0,0) scale(0.6); opacity: 0; }
-      20%  { opacity: 1; }
-      100% { transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) scale(0.1); opacity: 0; }
     }
   </style>
 </head>
 
 <body class="fx">
-  <canvas id="stars"></canvas>
+<canvas id="stars"></canvas>
 
-  <div class="wrap">
-    <main class="card" role="main" aria-live="polite">
-      <div class="inner">
-        <div class="top">
-          <div>
-            <h1 class="title">
-              <span class="hot">Der Countdown</span> läuft …
-            </h1>
-            <p class="sub">
-              Countdown bis <strong>13.11.2026</strong> um <strong>20:00 Uhr</strong>.
-            </p>
-          </div>
-        </div>
+<div class="wrap">
+  <div class="card">
+    <h1><span>Der Countdown</span> läuft …</h1>
+    <div class="sub">
+      Countdown bis <strong>13.11.2026</strong> um <strong>20:00 Uhr</strong>.
+    </div>
 
-        <section class="grid" id="countdownGrid" aria-label="Timer" title="Klick mich ✨">
-          <div id="sparkles" aria-hidden="true"></div>
+    <div class="grid" id="countdownGrid">
+      <div class="tile"><div class="num" id="days">–</div><div class="label">Tage</div></div>
+      <div class="tile"><div class="num" id="hours">–</div><div class="label">Stunden</div></div>
+      <div class="tile"><div class="num" id="minutes">–</div><div class="label">Minuten</div></div>
+      <div class="tile"><div class="num" id="seconds">–</div><div class="label">Sekunden</div></div>
+    </div>
 
-          <div class="tile">
-            <div class="num" id="days">–</div>
-            <div class="label" id="daysLabel">Tage</div>
-          </div>
-          <div class="tile">
-            <div class="num" id="hours">–</div>
-            <div class="label">Stunden</div>
-          </div>
-          <div class="tile">
-            <div class="num" id="minutes">–</div>
-            <div class="label">Minuten</div>
-          </div>
-          <div class="tile">
-            <div class="num" id="seconds">–</div>
-            <div class="label">Sekunden</div>
-          </div>
-        </section>
-
-        <div class="footer">
-          <div class="hint">
-            Tipp: Klick auf den Countdown für ein kleines Extra ✨
-          </div>
-
-          <div class="btns">
-            <button id="partyBtn" type="button">Party-Mode</button>
-          </div>
-        </div>
-      </div>
-    </main>
+    <div class="hint">Tipp: Tipp auf den Countdown ✨</div>
   </div>
+</div>
 
-  <div class="toast" id="toast">✨</div>
+<script>
+  const target = new Date("2026-11-13T20:00:00+01:00");
+  const grid = document.getElementById("countdownGrid");
 
-  <script>
-    // Ziel: 13. November 2026, 20:00 Uhr in Berlin (November = CET, +01:00)
-    const target = new Date("2026-11-13T20:00:00+01:00");
+  const out = {
+    days:document.getElementById("days"),
+    hours:document.getElementById("hours"),
+    minutes:document.getElementById("minutes"),
+    seconds:document.getElementById("seconds")
+  };
 
-    const el = (id) => document.getElementById(id);
+  const pad = n => String(n).padStart(2,"0");
 
-    // Touch-Gerät erkennen (Handy/Tablet)
-    const isTouch = matchMedia("(pointer: coarse)").matches;
+  function tick(){
+    const diff = Math.max(0, target - new Date());
+    const s = Math.floor(diff/1000);
+    out.days.textContent = Math.floor(s/86400);
+    out.hours.textContent = pad(Math.floor(s%86400/3600));
+    out.minutes.textContent = pad(Math.floor(s%3600/60));
+    out.seconds.textContent = pad(s%60);
+  }
 
-    const out = {
-      days: el("days"),
-      hours: el("hours"),
-      minutes: el("minutes"),
-      seconds: el("seconds"),
-      daysLabel: el("daysLabel")
-    };
+  setInterval(tick,250);
+  tick();
 
-    function pad2(n){ return String(n).padStart(2, "0"); }
+  /* Neon Pulse Interaction */
+  grid.addEventListener("click",()=>{
+    grid.classList.remove("pulse");
+    void grid.offsetWidth; // restart animation
+    grid.classList.add("pulse");
 
-    function setTimeParts(ms){
-      const total = Math.max(0, Math.floor(ms / 1000));
-      const days = Math.floor(total / 86400);
-      const hours = Math.floor((total % 86400) / 3600);
-      const minutes = Math.floor((total % 3600) / 60);
-      const seconds = total % 60;
+    if(navigator.vibrate) navigator.vibrate(25);
+  });
 
-      out.days.textContent = String(days);
-      out.hours.textContent = pad2(hours);
-      out.minutes.textContent = pad2(minutes);
-      out.seconds.textContent = pad2(seconds);
-
-      out.daysLabel.textContent = (days === 1) ? "Tag" : "Tage";
+  /* Subtle star background */
+  const canvas=document.getElementById("stars");
+  const ctx=canvas.getContext("2d");
+  let stars=[];
+  function resize(){
+    canvas.width=innerWidth*devicePixelRatio;
+    canvas.height=innerHeight*devicePixelRatio;
+    stars=Array.from({length:80},()=>({
+      x:Math.random()*canvas.width,
+      y:Math.random()*canvas.height,
+      r:Math.random()*1.5+0.2,
+      s:Math.random()*0.3+0.1
+    }));
+  }
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle="rgba(255,46,166,.6)";
+    for(const s of stars){
+      s.y+=s.s;
+      if(s.y>canvas.height) s.y=0;
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fill();
     }
-
-    // Toast
-    const toastEl = el("toast");
-    let toastTimer;
-    function toast(msg){
-      toastEl.textContent = msg;
-      toastEl.classList.add("show");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1200);
-    }
-
-    // Sparkle Burst
-    const grid = el("countdownGrid");
-    const sparkWrap = el("sparkles");
-
-    let sparkleCooldown = false;
-
-    function sparkleBurst(x, y){
-      if (sparkleCooldown) return;
-      sparkleCooldown = true;
-      setTimeout(() => (sparkleCooldown = false), isTouch ? 250 : 160);
-
-      // wenige Partikel => mobile-smooth
-      const n = isTouch ? 10 : 16;
-
-      // DOM sauber halten
-      sparkWrap.innerHTML = "";
-
-      for (let i=0; i<n; i++){
-        const s = document.createElement("div");
-        s.className = "sparkle";
-        s.style.left = x + "px";
-        s.style.top  = y + "px";
-
-        const dx = (Math.random() * 180 - 90);
-        const dy = (Math.random() * 180 - 90);
-
-        s.style.setProperty("--dx", dx + "px");
-        s.style.setProperty("--dy", dy + "px");
-        s.style.animationDuration = (isTouch ? (420 + Math.random()*220) : (380 + Math.random()*240)) + "ms";
-
-        // leichte Variation: pink/weiß
-        const pinky = Math.random() < 0.45;
-        s.style.background = pinky ? "rgba(255, 46, 166, .95)" : "rgba(255,255,255,.92)";
-        s.style.boxShadow = pinky ? "0 0 18px rgba(255,46,166,.8)" : "0 0 18px rgba(255,255,255,.35)";
-
-        sparkWrap.appendChild(s);
-        s.addEventListener("animationend", () => s.remove(), { once:true });
-      }
-    }
-
-    function clickSparkles(e){
-      const rect = grid.getBoundingClientRect();
-      const x = (e.clientX ?? (rect.left + rect.width/2)) - rect.left;
-      const y = (e.clientY ?? (rect.top + rect.height/2)) - rect.top;
-
-      sparkleBurst(x, y);
-
-      if (navigator.vibrate) navigator.vibrate(18);
-      toast("✨ Sparkle!");
-    }
-
-    // Tap/click on countdown
-    grid.addEventListener("click", clickSparkles, { passive: true });
-
-    // Party mode: periodic sparkle from random positions
-    let party = false;
-    let partyInterval = null;
-
-    el("partyBtn").addEventListener("click", () => {
-      party = !party;
-      toast(party ? "Party-Mode an 💖" : "Party-Mode aus");
-
-      if (party){
-        // initial burst center
-        sparkleBurst(grid.clientWidth/2, grid.clientHeight/2);
-
-        partyInterval = setInterval(() => {
-          const x = Math.random() * grid.clientWidth;
-          const y = Math.random() * grid.clientHeight;
-          sparkleBurst(x, y);
-        }, isTouch ? 700 : 520);
-      } else {
-        clearInterval(partyInterval);
-        partyInterval = null;
-        sparkWrap.innerHTML = "";
-      }
-    });
-
-    function tick(){
-      const now = new Date();
-      const diff = target - now;
-      setTimeParts(diff);
-    }
-
-    // Stars/particles canvas (Mobile weniger Sterne)
-    const canvas = el("stars");
-    const ctx = canvas.getContext("2d", { alpha:true });
-
-    let W, H, stars = [];
-    function resize(){
-      W = canvas.width = Math.floor(window.innerWidth * devicePixelRatio);
-      H = canvas.height = Math.floor(window.innerHeight * devicePixelRatio);
-
-      const starCount = isTouch ? 90 : 140;
-      stars = Array.from({length: starCount}, () => ({
-        x: Math.random()*W,
-        y: Math.random()*H,
-        r: (Math.random()*1.4 + 0.2) * devicePixelRatio,
-        s: (Math.random()*0.25 + 0.05) * devicePixelRatio,
-        a: Math.random()*0.6 + 0.2
-      }));
-    }
-
-    function draw(){
-      ctx.clearRect(0,0,W,H);
-      ctx.globalCompositeOperation = "lighter";
-
-      for (const st of stars){
-        st.y += st.s;
-        if (st.y > H + 10) { st.y = -10; st.x = Math.random()*W; }
-
-        ctx.globalAlpha = st.a;
-        ctx.beginPath();
-        ctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
-        ctx.fillStyle = "rgba(255, 46, 166, 0.65)";
-        ctx.fill();
-
-        if (!isTouch && Math.random() < 0.012){
-          ctx.globalAlpha = 0.85;
-          ctx.beginPath();
-          ctx.arc(st.x, st.y, st.r*0.75, 0, Math.PI*2);
-          ctx.fillStyle = "rgba(255,255,255,0.9)";
-          ctx.fill();
-        }
-      }
-
-      ctx.globalAlpha = 1;
-      ctx.globalCompositeOperation = "source-over";
-      requestAnimationFrame(draw);
-    }
-
-    window.addEventListener("resize", resize);
-
-    // Start
-    resize();
-    draw();
-    tick();
-    setInterval(tick, 250);
-  </script>
+    requestAnimationFrame(draw);
+  }
+  resize(); draw();
+  addEventListener("resize",resize);
+</script>
 </body>
 </html>
