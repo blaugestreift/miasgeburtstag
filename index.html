@@ -64,7 +64,6 @@
       0%{ transform: translateY(-20px); }
       100%{ transform: translateY(20px); }
     }
-
     @media (pointer: coarse){
       .fx::before{ display:none; }
     }
@@ -127,14 +126,6 @@
       gap: clamp(14px, 3.2vw, 22px);
     }
 
-    .top{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:14px;
-      flex-wrap:wrap;
-    }
-
     .title{
       line-height:1.02;
       margin:0;
@@ -151,6 +142,15 @@
         0 0 42px rgba(255,46,166,.18);
     }
 
+    /* hübsches h2 (bei dir war’s ungestylt) */
+    h2{
+      margin: 10px 0 0;
+      font-weight: 600;
+      font-size: clamp(16px, 4.2vw, 20px);
+      line-height: 1.25;
+      letter-spacing: .01em;
+    }
+
     .sub{
       margin: clamp(10px, 2.2vw, 12px) 0 0;
       opacity:.88;
@@ -165,7 +165,9 @@
       gap: clamp(10px, 2.6vw, 14px);
       cursor:pointer;
       user-select:none;
-      position:relative; /* for sparkles overlay */
+      position:relative; /* sparkles overlay */
+      -webkit-user-select:none;
+      touch-action: manipulation; /* besseres Tap-Verhalten */
     }
 
     @media (max-width: 720px){
@@ -225,22 +227,13 @@
     .footer{
       display:flex;
       align-items:center;
-      justify-content:space-between;
+      justify-content:flex-end;
       gap: 12px;
       flex-wrap:wrap;
       margin-top: 2px;
     }
 
-    .hint{
-      opacity:.84;
-      font-size: clamp(13px, 3.4vw, 14px);
-    }
-
-    .btns{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
+    .btns{ display:flex; gap:10px; flex-wrap:wrap; }
 
     button{
       appearance:none;
@@ -259,6 +252,7 @@
       border-color: rgba(255,46,166,.55);
     }
 
+    /* Toast (war bei dir im HTML nicht vorhanden) */
     .toast{
       position: fixed;
       left: 50%;
@@ -295,8 +289,6 @@
       position:absolute;
       width:10px; height:10px;
       border-radius: 999px;
-      background: rgba(255,255,255,.92);
-      box-shadow: 0 0 18px rgba(255,46,166,.7);
       transform: translate(-50%, -50%);
       animation: sparkle 520ms ease-out forwards;
       will-change: transform, opacity;
@@ -316,20 +308,18 @@
   <div class="wrap">
     <main class="card" role="main" aria-live="polite">
       <div class="inner">
-        <div class="top">
-          <div>
-            <h1 class="title">
-              Der <span class="hot">Countdown</span> läuft!
-            </h1>
-            <h2>
-              Liebe Mia,<br>
-              wir haben dich unendlich dolle lieb<br>
-              und wünschen Dir alles Gute zum Geburtstag!
-            </h2>
-            <p class="sub">
-              Countdown bis <strong>13.11.2026</strong> um <strong>20:00 Uhr</strong>.
-            </p>
-          </div>
+        <div>
+          <h1 class="title">Der <span class="hot">Countdown</span> läuft!</h1>
+
+          <h2>
+            Liebe Mia,<br>
+            wir haben dich unendlich dolle lieb<br>
+            und wünschen Dir alles Gute zum Geburtstag!
+          </h2>
+
+          <p class="sub">
+            Countdown bis <strong>13.11.2026</strong> um <strong>20:00 Uhr</strong>.
+          </p>
         </div>
 
         <section class="grid" id="countdownGrid" aria-label="Timer" title="Klick mich ✨">
@@ -361,100 +351,189 @@
       </div>
     </main>
   </div>
+
+  <div class="toast" id="toast">✨</div>
+
   <script>
-    // Ziel: 13. November 2026, 20:00 Uhr in Berlin (November = CET, +01:00)
-    const target = new Date("2026-11-13T20:00:00+01:00");
+    window.addEventListener("DOMContentLoaded", () => {
+      // Ziel: 13. November 2026, 20:00 Uhr in Berlin (November = CET, +01:00)
+      const target = new Date("2026-11-13T20:00:00+01:00");
 
-    const el = (id) => document.getElementById(id);
+      const el = (id) => document.getElementById(id);
+      const isTouch = matchMedia("(pointer: coarse)").matches;
 
-    // Touch-Gerät erkennen (Handy/Tablet)
-    const isTouch = matchMedia("(pointer: coarse)").matches;
+      const out = {
+        days: el("days"),
+        hours: el("hours"),
+        minutes: el("minutes"),
+        seconds: el("seconds"),
+        daysLabel: el("daysLabel")
+      };
 
-    const out = {
-      days: el("days"),
-      hours: el("hours"),
-      minutes: el("minutes"),
-      seconds: el("seconds"),
-      daysLabel: el("daysLabel")
-    };
+      const grid = el("countdownGrid");
+      const sparkWrap = el("sparkles");
+      const partyBtn = el("partyBtn");
+      const toastEl = el("toast");
 
-    function pad2(n){ return String(n).padStart(2, "0"); }
-
-    function setTimeParts(ms){
-      const total = Math.max(0, Math.floor(ms / 1000));
-      const days = Math.floor(total / 86400);
-      const hours = Math.floor((total % 86400) / 3600);
-      const minutes = Math.floor((total % 3600) / 60);
-      const seconds = total % 60;
-
-      out.days.textContent = String(days);
-      out.hours.textContent = pad2(hours);
-      out.minutes.textContent = pad2(minutes);
-      out.seconds.textContent = pad2(seconds);
-
-      out.daysLabel.textContent = (days === 1) ? "Tag" : "Tage";
-    }
-
-    // Toast
-    const toastEl = el("toast");
-    let toastTimer;
-    function toast(msg){
-      toastEl.textContent = msg;
-      toastEl.classList.add("show");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1200);
-    }
-
-    // Sparkle Burst
-    const grid = el("countdownGrid");
-    const sparkWrap = el("sparkles");
-
-    let sparkleCooldown = false;
-
-    function sparkleBurst(x, y){
-      if (sparkleCooldown) return;
-      sparkleCooldown = true;
-      setTimeout(() => (sparkleCooldown = false), isTouch ? 250 : 160);
-
-      // wenige Partikel => mobile-smooth
-      const n = isTouch ? 10 : 16;
-
-      // DOM sauber halten
-      sparkWrap.innerHTML = "";
-
-      for (let i=0; i<n; i++){
-        const s = document.createElement("div");
-        s.className = "sparkle";
-        s.style.left = x + "px";
-        s.style.top  = y + "px";
-
-        const dx = (Math.random() * 180 - 90);
-        const dy = (Math.random() * 180 - 90);
-
-        s.style.setProperty("--dx", dx + "px");
-        s.style.setProperty("--dy", dy + "px");
-        s.style.animationDuration = (isTouch ? (420 + Math.random()*220) : (380 + Math.random()*240)) + "ms";
-
-        // leichte Variation: pink/weiß
-        const pinky = Math.random() < 0.45;
-        s.style.background = pinky ? "rgba(255, 46, 166, .95)" : "rgba(255,255,255,.92)";
-        s.style.boxShadow = pinky ? "0 0 18px rgba(255,46,166,.8)" : "0 0 18px rgba(255,255,255,.35)";
-
-        sparkWrap.appendChild(s);
-        s.addEventListener("animationend", () => s.remove(), { once:true });
+      if (!grid || !sparkWrap || !partyBtn || !toastEl) {
+        console.error("Ein Element fehlt im HTML (grid/sparkles/partyBtn/toast).");
+        return;
       }
-    }
 
-    function clickSparkles(e){
-      const rect = grid.getBoundingClientRect();
-      const x = (e.clientX ?? (rect.left + rect.width/2)) - rect.left;
-      const y = (e.clientY ?? (rect.top + rect.height/2)) - rect.top;
+      function pad2(n){ return String(n).padStart(2, "0"); }
 
-      sparkleBurst(x, y);
+      function setTimeParts(ms){
+        const total = Math.max(0, Math.floor(ms / 1000));
+        const days = Math.floor(total / 86400);
+        const hours = Math.floor((total % 86400) / 3600);
+        const minutes = Math.floor((total % 3600) / 60);
+        const seconds = total % 60;
 
-      if (navigator.vibrate) navigator.vibrate(18);
-      toast("✨ Sparkle!");
-    }
+        out.days.textContent = String(days);
+        out.hours.textContent = pad2(hours);
+        out.minutes.textContent = pad2(minutes);
+        out.seconds.textContent = pad2(seconds);
+        out.daysLabel.textContent = (days === 1) ? "Tag" : "Tage";
+      }
 
-    // Tap/click on countdown
-    grid.addEventListener("click", clickSparkles, {
+      // Toast
+      let toastTimer;
+      function toast(msg){
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1200);
+      }
+
+      // Sparkle Burst (mobile-smooth: wenig Partikel + cooldown + fragment)
+      let sparkleCooldown = false;
+
+      function sparkleBurst(x, y){
+        if (sparkleCooldown) return;
+        sparkleCooldown = true;
+        setTimeout(() => (sparkleCooldown = false), isTouch ? 220 : 140);
+
+        const n = isTouch ? 10 : 16;
+
+        // NICHT jedes Mal alles killen, sondern sauber ersetzen:
+        sparkWrap.textContent = "";
+
+        const frag = document.createDocumentFragment();
+
+        for (let i=0; i<n; i++){
+          const s = document.createElement("div");
+          s.className = "sparkle";
+          s.style.left = x + "px";
+          s.style.top  = y + "px";
+
+          const dx = (Math.random() * 180 - 90);
+          const dy = (Math.random() * 180 - 90);
+
+          s.style.setProperty("--dx", dx + "px");
+          s.style.setProperty("--dy", dy + "px");
+          s.style.animationDuration = (isTouch ? (420 + Math.random()*180) : (380 + Math.random()*220)) + "ms";
+
+          const pinky = Math.random() < 0.50;
+          s.style.background = pinky ? "rgba(255, 46, 166, .95)" : "rgba(255,255,255,.92)";
+          s.style.boxShadow  = pinky ? "0 0 18px rgba(255,46,166,.8)" : "0 0 18px rgba(255,255,255,.35)";
+
+          s.addEventListener("animationend", () => s.remove(), { once:true });
+          frag.appendChild(s);
+        }
+
+        sparkWrap.appendChild(frag);
+      }
+
+      function clickSparkles(e){
+        const rect = grid.getBoundingClientRect();
+        const x = (e.clientX ?? (rect.left + rect.width/2)) - rect.left;
+        const y = (e.clientY ?? (rect.top + rect.height/2)) - rect.top;
+
+        sparkleBurst(x, y);
+
+        if (navigator.vibrate) navigator.vibrate(16);
+      }
+
+      // ✅ Click handler (NICHT abschneiden 😄)
+      grid.addEventListener("click", clickSparkles, { passive:true });
+
+      // Party mode: Interval – wiederhergestellt
+      let party = false;
+      let partyInterval = null;
+
+      partyBtn.addEventListener("click", () => {
+        party = !party;
+        toast(party ? "Party-Mode an 💖" : "Party-Mode aus");
+
+        if (party){
+          // Startburst in die Mitte
+          sparkleBurst(grid.clientWidth/2, grid.clientHeight/2);
+
+          // Entspanntes Intervall (mobile langsamer)
+          partyInterval = setInterval(() => {
+            const x = Math.random() * grid.clientWidth;
+            const y = Math.random() * grid.clientHeight;
+            sparkleBurst(x, y);
+          }, isTouch ? 750 : 520);
+        } else {
+          clearInterval(partyInterval);
+          partyInterval = null;
+          sparkWrap.textContent = "";
+        }
+      });
+
+      // Countdown
+      function tick(){
+        const diff = target - new Date();
+        setTimeParts(diff);
+      }
+      tick();
+      setInterval(tick, 250);
+
+      // Stars canvas (mobile weniger Sterne)
+      const canvas = el("stars");
+      const ctx = canvas.getContext("2d", { alpha:true });
+
+      let W, H, stars = [];
+
+      function resize(){
+        W = canvas.width = Math.floor(window.innerWidth * devicePixelRatio);
+        H = canvas.height = Math.floor(window.innerHeight * devicePixelRatio);
+
+        const starCount = isTouch ? 70 : 120;
+        stars = Array.from({length: starCount}, () => ({
+          x: Math.random()*W,
+          y: Math.random()*H,
+          r: (Math.random()*1.4 + 0.2) * devicePixelRatio,
+          s: (Math.random()*0.22 + 0.06) * devicePixelRatio,
+          a: Math.random()*0.55 + 0.18
+        }));
+      }
+
+      function draw(){
+        ctx.clearRect(0,0,W,H);
+        ctx.globalCompositeOperation = "lighter";
+
+        for (const st of stars){
+          st.y += st.s;
+          if (st.y > H + 10) { st.y = -10; st.x = Math.random()*W; }
+
+          ctx.globalAlpha = st.a;
+          ctx.beginPath();
+          ctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
+          ctx.fillStyle = "rgba(255, 46, 166, 0.60)";
+          ctx.fill();
+        }
+
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = "source-over";
+        requestAnimationFrame(draw);
+      }
+
+      window.addEventListener("resize", resize);
+      resize();
+      draw();
+    });
+  </script>
+</body>
+</html>
